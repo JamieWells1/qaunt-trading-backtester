@@ -10,6 +10,8 @@ def get_df_selected_tf(
     data = yf.download(
         ticker, interval=_interval, start=_start_date, end=_end_date, progress=False
     )
+    if ("Adj Close", ticker) in data.columns:
+        data = data.drop(columns=[("Adj Close", ticker)])
 
     return data, ticker
 
@@ -17,8 +19,8 @@ def get_df_selected_tf(
 # AAPL, "15m", "5d"
 def get_df_recent(ticker, _interval, _period):  # For the most recent timeframe
     data = yf.download(ticker, interval=_interval, period=_period, progress=False)
-    if ('Adj Close', ticker) in data.columns:
-        data = data.drop(columns=[('Adj Close', ticker)])
+    if ("Adj Close", ticker) in data.columns:
+        data = data.drop(columns=[("Adj Close", ticker)])
 
     return data, ticker
 

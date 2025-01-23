@@ -1,21 +1,21 @@
 {
   "general": {
-    "ticker": "AAPL",
-    "simulate": true,
-    "mostRecent": true,
+    "ticker": "JPM",
+    "simulate": false,
+    "mostRecent": false,
     "interval": "1d",
     "timePeriod": "2y",
-    "startDate": "2021-12-28",
-    "endDate": "2024-12-28",
+    "startDate": "2022-01-01",
+    "endDate": "2025-01-01",
     "addCsv": false,
-    "dummyData": true,
+    "dummyData": false,
     "dummyCsvFileName": "data.csv",
     "renderStoplossTakeprofit": true
   },
   "indicators": {
     "maPeriod": 50,
     "rsiPeriod": 12,
-    "atrPeriod": 25,
+    "atrPeriod": 21,
     "stdDevPeriod": 26
   },
   "simulate": {
@@ -28,17 +28,17 @@
   "account": {
     "initialBalance": 10000,
     "baseOrderValue": 1000,
-    "maxOrderValue": 6469,
+    "maxOrderValue": 7634,
     "maxConcurrentPositions": 5
   },
   "multipliers": {
-    "buyMultiplier": 2.93820947185597,
-    "bandMultiplier": 1.276456147401615,
-    "stoplossAtrMultiplier": 1.25,
-    "takeprofitAtrMultiplier": 3.05
+    "buyMultiplier": 1.495729637534271,
+    "bandMultiplier": 1.517561712834044,
+    "stoplossAtrMultiplier": 1.84,
+    "takeprofitAtrMultiplier": 2.77
   },
   "strategy1": {
-    "A": 3.49,
-    "B": 1.25
+    "A": 3.66,
+    "B": 1.39
   }
 }

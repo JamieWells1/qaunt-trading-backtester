@@ -370,9 +370,3 @@ def simulate():
     )
 
     return fig
-
-
-# For testing:
-
-# build()
-# simulate()
