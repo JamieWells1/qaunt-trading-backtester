@@ -81,40 +81,14 @@ def indicators(account, data):
         }
         rules.payload = payload
 
-        # Check if account is eligible to place a buy order (has enough uninvested capital, hasn't reached maximum amount of open positions, etc.)
-        validate_response = rules.correctify()
-        can_buy = False
-        for value in validate_response.values():
-            if value == True:
-                can_buy = True
-            else:
-                can_buy = False
-                break
+        validate_response = rules.validate()
+        can_buy = all(validate_response.values())
 
-        # Logic for placing buy and sell orders
         if can_buy:
-
-            # <==================== Add your custom indicator logic below ====================>
-
-            """
-            <========== Place a buy order: ==========>
-            buy(entries, {amount}, price)
-
-            <========== Update stoploss/takeprofit: ==========>
-            stoploss_takeprofit.update(price, atr, purchase_date)
-
-            <========== Place a sell order: ==========>
-            sell(entries, price)
-
-            <========== Remove stoploss/takeprofit: ==========>
-            stoploss_takeprofit.remove()
-            """
-
-            # Strategy 1
             strategy_1_response = strategies.bearish_comeback(
                 candles[i - strategy_1_period : i + 1], strategy_1_period
             )
-            if strategy_1_response["buy"] == True:
+            if strategy_1_response["buy"]:
                 buy(
                     entries, strategy_1_response["amount"], strategy_1_response["price"]
                 )
@@ -124,29 +98,18 @@ def indicators(account, data):
                     candles[i]["datetime"],
                 )
 
-            # Strategy 2
-
-        # <==================== Add your custom indicator logic above ====================>
-
-        # Logic for checking if price has breached stoploss/takeprofit:
-
         if stoploss_takeprofit.values_set:
             sltp_response = stoploss_takeprofit.exit(candles[i])
-            if sltp_response["sell"] == True:
+            if sltp_response["sell"]:
                 sell(exits, sltp_response["price"])
                 stoploss_takeprofit.remove()
 
-        # Logic for updating balance:
-
-        account.open_position_amount = account.shares_owned * candles[i]["close"]
-        account.balance_absolute = (
-            account.uninvested_balance + account.open_position_amount
-        )
+        current_close = candles[i]["close"]
+        account.open_position_amount = account.shares_owned * current_close
+        account.balance_absolute = account.uninvested_balance + account.open_position_amount
         account.profit = account.balance_absolute - config["account"]["initialBalance"]
-
         data.ongoing_balance.append(account.balance_absolute)
 
-    # Add entry and exit points to the graph
     entries = pd.Series(entries.values(), index=entries.keys())
     exits = pd.Series(exits.values(), index=exits.keys())
 

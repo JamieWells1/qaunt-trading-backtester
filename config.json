@@ -1,6 +1,6 @@
 {
   "general": {
-    "ticker": "JPM",
+    "ticker": "MSTR",
     "simulate": false,
     "mostRecent": false,
     "interval": "1d",
@@ -15,11 +15,11 @@
   "indicators": {
     "maPeriod": 50,
     "rsiPeriod": 12,
-    "atrPeriod": 21,
+    "atrPeriod": 22,
     "stdDevPeriod": 26
   },
   "simulate": {
-    "simulations": 10,
+    "simulations": 1000,
     "simBestBacktests": false,
     "writeBacktestsToJSON": true,
     "addToTopResults": true,
@@ -28,17 +28,17 @@
   "account": {
     "initialBalance": 10000,
     "baseOrderValue": 1000,
-    "maxOrderValue": 7634,
+    "maxOrderValue": 2923,
     "maxConcurrentPositions": 5
   },
   "multipliers": {
-    "buyMultiplier": 1.495729637534271,
-    "bandMultiplier": 1.517561712834044,
-    "stoplossAtrMultiplier": 1.84,
-    "takeprofitAtrMultiplier": 2.77
+    "buyMultiplier": 1.7176795380083851,
+    "bandMultiplier": 1.5931461068916148,
+    "stoplossAtrMultiplier": 1.68,
+    "takeprofitAtrMultiplier": 3.33
   },
   "strategy1": {
-    "A": 3.66,
-    "B": 1.39
+    "A": 3.61,
+    "B": 1.42
   }
 }

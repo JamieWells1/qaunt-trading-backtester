@@ -9,8 +9,8 @@ import pandas as pd
 def init_graph_data(account):
     config = fetch.get_settings()
 
-    if config["general"]["dummyData"] == False:
-        if config["general"]["mostRecent"] == False:
+    if not config["general"]["dummyData"]:
+        if not config["general"]["mostRecent"]:
             df, ticker = fetch.get_df_selected_tf(
                 config["general"]["ticker"],
                 config["general"]["interval"],
@@ -92,14 +92,11 @@ def init_graph_data(account):
     data_obj.lows = df.iloc[:, 2][cutoff_period:]
     data_obj.opens = df.iloc[:, 3][cutoff_period:]
 
-    valid = account.check_balance()
-    if valid == False:
-        print(
-            "\nError: Base order value cannot be greater than starting amount. Please restart the server.\n"
-        )
+    if not account.check_balance():
+        print("\nError: Base order value cannot be greater than starting amount. Please restart the server.\n")
         quit()
 
-    if config["general"]["addCsv"] == True:
+    if config["general"]["addCsv"]:
         number = utils.generate_number(4)
         df.to_csv(f"z.{data_obj.ticker}_{number}.csv")
 
@@ -110,30 +107,34 @@ def init_graph_data(account):
     data_obj.takeprofit_regions = takeprofit_regions
 
     account.win_rate = (
-        ((account.profitable_trades / account.completed_trades) * 100)
+        (account.profitable_trades / account.completed_trades * 100)
         if account.completed_trades > 0
         else -1
     )
 
-    perc = ""
     if account.win_rate == -1:
-        win_rate = "N/A"
+        win_rate_str = "N/A"
+        perc = ""
     else:
-        win_rate = round(account.win_rate, 2)
+        win_rate_str = round(account.win_rate, 2)
         perc = "%"
 
-    profit_colour = "\033[0m"
     if account.profit > 0:
         profit_colour = "\033[32m"
     elif account.profit < 0:
         profit_colour = "\033[31m"
+    else:
+        profit_colour = "\033[0m"
     reset_colour = "\033[0m"
 
     print(
         "\n=====================================================================================\n"
     )
+    total_return = ((account.balance_absolute / config['account']['initialBalance']) - 1) * 100
     print(
-        f"Made {(account.completed_trades)} trades | Win rate: {win_rate}{perc} | {profit_colour}Return: {(((account.balance_absolute / config['account']['initialBalance']) - 1) * 100):.2f}%{reset_colour} | {profit_colour}Profit: ${account.profit:.2f}{reset_colour}\n"
+        f"Made {account.completed_trades} trades | Win rate: {win_rate_str}{perc} | "
+        f"{profit_colour}Return: {total_return:.2f}%{reset_colour} | "
+        f"{profit_colour}Profit: ${account.profit:.2f}{reset_colour}\n"
     )
 
     return data_obj
@@ -142,7 +143,7 @@ def init_graph_data(account):
 def init_sim_data(account):
     config = fetch.get_settings()
 
-    if config["general"]["dummyData"] == False:
+    if not config["general"]["dummyData"]:
         try:
             df, ticker = fetch.get_df_selected_tf(
                 config["general"]["ticker"],
@@ -150,8 +151,8 @@ def init_sim_data(account):
                 config["general"]["startDate"],
                 config["general"]["endDate"],
             )
-        except:
-            print("Failed to run simulations: Malformed configuration file.")
+        except Exception as e:
+            print(f"Failed to run simulations: {e}")
             quit()
     else:
         root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

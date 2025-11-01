@@ -8,32 +8,24 @@ class Rules:
 
     def balance_valid(self):
         initial_buy_amount = self.payload["initial_buy_amount"]
-        if initial_buy_amount > self.config["account"]["maxOrderValue"]:
-            initial_buy_amount = self.config["account"]["maxOrderValue"]
-        if initial_buy_amount > (self.payload["account"]).uninvested_balance:
-            initial_buy_amount = (self.payload["account"]).uninvested_balance
+        max_order_value = self.config["account"]["maxOrderValue"]
+        uninvested_balance = self.payload["account"].uninvested_balance
 
-        if initial_buy_amount > 0:
-            response = {"valid": True, "amount": initial_buy_amount}
-        else:
-            response = {"valid": False, "amount": 0}
+        initial_buy_amount = min(initial_buy_amount, max_order_value, uninvested_balance)
 
-        return response
+        return {
+            "valid": initial_buy_amount > 0,
+            "amount": initial_buy_amount
+        }
 
     def max_positions_reached(self):
         account = self.payload["account"]
-        if account.open_positions >= self.config["account"]["maxConcurrentPositions"]:
-            return False
-        else:
-            return True
+        max_positions = self.config["account"]["maxConcurrentPositions"]
+        return account.open_positions < max_positions
 
-    # Go through all the rules
-    def correctify(self):
-        balance_valid = Rules.balance_valid(self)["valid"]
-        max_positions_reached = Rules.max_positions_reached(self)
-        response = {
-            "balance_valid": balance_valid,
-            "max_positions_reached": max_positions_reached,
+    def validate(self):
+        balance_result = self.balance_valid()
+        return {
+            "balance_valid": balance_result["valid"],
+            "max_positions_reached": self.max_positions_reached(),
         }
-
-        return response

@@ -1,6 +1,5 @@
-# Price action mean reversion backtesting
-import sys, os, json
-
+import sys
+import os
 
 from dash import Dash, html, dcc, Input, Output
 
@@ -17,50 +16,27 @@ app = Dash(
 )
 server = app.server
 
-# App layout
-app.layout = html.Div(
-    [
-        dcc.Graph(id="candles", style={"height": "125vh"}),
-        dcc.Interval(
-            id="interval", interval=86400000
-        ),  # Set this interval to something low if you want a live chart (2000 = updates every 2000ms)
-    ]
-)
+app.layout = html.Div([
+    dcc.Graph(id="candles", style={"height": "125vh"}),
+    dcc.Interval(id="interval", interval=86400000),
+])
 
 
 @app.callback(
     Output("candles", "figure"),
     Input("interval", "n_intervals"),
 )
-# update_graph() will run every time the app is updated. App will automatically update when you save your code.
 def update_graph(n_intervals):
-
-    if config["general"]["simulate"] == True:
-        try:
+    try:
+        if config["general"]["simulate"]:
             return graph.simulate()
-
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-
-            print(
-                f"\nGraph failed to load: {e} => {exc_type, fname, exc_tb.tb_lineno}\n"
-            )
-        if not Exception:
-            print("\n<========== Graph updated successfully ==========>\n")
-    else:
-        try:
+        else:
             return graph.build()
-
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-
-            print(
-                f"\nGraph failed to load: {e} => {exc_type, fname, exc_tb.tb_lineno}\n"
-            )
-        if not Exception:
-            print("\n<========== Graph updated successfully ==========>\n")
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(f"\nGraph failed to load: {e} => {exc_type, fname, exc_tb.tb_lineno}\n")
+        raise
 
 
 def main():

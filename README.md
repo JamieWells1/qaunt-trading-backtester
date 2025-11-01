@@ -1,275 +1,262 @@
-# Trading Algorithm Boilerplate
+# Quantitative Trading Strategy Backtester
 
-This project provides a robust **trading algorithm simulator** that allows users to build, test, and optimize trading strategies using historical or live stock data. The platform features advanced candlestick visualizations, indicator plotting, and Monte Carlo simulations to find the best-performing parameter configurations. All tools are pre-configured, making it beginner-friendly yet powerful for advanced users.
-
----
-
-## Features
-
-- **Candlestick Charting**: Visualize stock prices alongside custom indicators.
-- **Indicators**: Support for Moving Average (SMA), Relative Strength Index (RSI), Average True Range (ATR), and Standard Deviation.
-- **Monte Carlo Simulations**: Run multiple simulations to optimize parameters.
-- **Customizable Configurations**: Tweak settings in `config.json` to control backtesting parameters.
-- **Real-Time and Historical Data**: Seamlessly switch between live and past data.
+A Python-based backtesting framework for developing, optimizing, and evaluating systematic trading strategies on US equities. Features Monte Carlo parameter optimization, real-time visualization, and comprehensive performance analytics.
 
 ---
 
-## Quickstart Guide
+## Overview
 
-### 1. Install Python
+This framework enables rapid strategy development and testing through:
 
-Ensure Python (>= 3.7) is installed. Download it [here](https://www.python.org/downloads/).
+- **Vectorized backtesting engine** for historical price data (yfinance API)
+- **Monte Carlo parameter optimization** with percentile-based filtering
+- **Dynamic risk management** via ATR-based stop-loss/take-profit
+- **Real-time strategy visualization** using Plotly/Dash
+- **Position sizing controls** with concurrent position limits and capital allocation rules
 
-### 2. Clone the Repository
+---
 
-Fork and clone this repository:
+## Architecture
 
-```shell
-git clone https://github.com/your-username/trading-algorithm-boilerplate.git
+### Backtesting Engine
+
+The backtesting system operates on OHLC candlestick data with calculated technical indicators:
+
+**Data Pipeline:**
+
+```
+yfinance API → Data validation → Indicator calculation → Strategy execution → Performance metrics
+```
+
+**Available Indicators:**
+
+- Simple Moving Average (SMA)
+- Relative Strength Index (RSI)
+- Average True Range (ATR)
+- Rolling Standard Deviation
+
+The engine processes each candle sequentially, evaluating entry/exit conditions while enforcing risk management rules and position limits. Account state (balance, shares owned, unrealized P&L) updates after each candle.
+
+![Backtest visualization with entry/exit signals](images/backtest-overview.png)
+
+### Risk Management
+
+**ATR-Based Exits:**
+
+- Stop-loss: `entry_price - (ATR × stoploss_multiplier)`
+- Take-profit: `entry_price + (ATR × takeprofit_multiplier)`
+
+Positions automatically exit when price breaches either threshold. ATR multipliers are configurable and can be optimized via simulation.
+
+**Position Controls:**
+
+- Maximum concurrent positions
+- Per-trade capital limits
+- Minimum uninvested balance requirements
+
+### Monte Carlo Optimization
+
+The simulation framework performs parameter space exploration to identify optimal strategy configurations.
+
+**Process:**
+
+1. **Parameter Randomization** — Each simulation randomizes configured parameters within specified ranges:
+
+   - Indicator periods (RSI, ATR, SMA, standard deviation)
+   - Position sizing (max order value, buy multiplier)
+   - Risk parameters (stop-loss/take-profit ATR multipliers)
+   - Strategy-specific parameters
+
+2. **Backtest Execution** — Each parameter set runs against historical data, generating:
+
+   - Total return (%)
+   - Final portfolio value
+   - Win rate (%)
+   - Number of trades executed
+
+3. **Percentile Filtering** — Results are ranked by total return and final value. Only backtests exceeding the configured percentile threshold (default: 90th) are saved to `backtest_results/best_backtests.json`.
+
+4. **Iterative Refinement** — Best-performing parameter sets can be re-simulated by enabling `simBestBacktests`, which:
+   - Loads top configurations from `best_backtests.json`
+   - Re-runs each on the same historical period
+   - Overwrites results with the new top performers
+
+This creates a genetic algorithm-like optimization where successive simulation rounds converge toward optimal parameters.
+
+![Monte Carlo simulation results showing multiple equity curves](images/monte-carlo.png)
+
+**Output Files:**
+
+- `backtest_results/sim-{ID}.json` — Full results for each simulation run
+- `backtest_results/best_backtests.json` — Cumulative top performers across all runs
+
+---
+
+## Included Strategy: Bearish Comeback
+
+The default strategy implements a mean-reversion approach targeting oversold conditions:
+
+**Entry Logic:**
+
+```python
+price_decline = (price_{t-period} - price_current) / std_dev
+threshold = A - (B × ln(period + 1))
+
+if price_decline > threshold and previous_candle_bearish:
+    position_size = base_order_value × price_decline_ratio
+    enter_long()
+```
+
+**Parameters:**
+
+- `A`, `B`: Decline sensitivity coefficients
+- `period`: Lookback window (default: 7 candles)
+
+Strategy enters when recent price decline exceeds a logarithmically-scaled threshold, with position size proportional to decline magnitude. Exits via ATR-based stops or take-profit targets.
+
+![Strategy entry/exit example](images/strategy-example.png)
+
+---
+
+## Quickstart
+
+**Prerequisites:** Python 3.7+
+
+### Installation
+
+```bash
+git clone https://github.com/JamieWells1/trading-algorithm-boilerplate.git
 cd trading-algorithm-boilerplate
-```
-
-### 3. Set up a Virtual Environment
-
-### **On Windows:**
-
-```shell
-python -m venv .venv
-source .venv/Scripts/activate
-```
-
-### **On Mac/Linux:**
-
-```shell
 python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 4. Install Dependencies
-
-```shell
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 5. Configure Settings
+### Run Backtest
 
-Open config.json and set your preferences. For example:
-
-```json
-{
-  "ticker": "AAPL",
-  "simulate": true,
-  "simulations": 50,
-  "maPeriod": 20,
-  "rsiPeriod": 14,
-  "initialBalance": 10000
-}
-```
-
-There are some more advanced settings that you can set if you wish for further customisation.
-
-### 5. Run the Application:
-
-Start the server:
-
-```shell
+```bash
 python main.py
 ```
 
-Visit [http://127.0.0.1:8050/](http://127.0.0.1:8050/) in your browser to see the charts.
+Navigate to `http://127.0.0.1:8050` to view interactive charts.
+
+### Run Simulation
+
+Edit `config.json`:
+
+```json
+{
+  "general": { "simulate": true },
+  "simulate": { "simulations": 100 }
+}
+```
+
+Then restart: `python main.py`
 
 ---
 
-## How it Works
+## Strategy Development
 
-1. Data Fetching: The app fetches stock data using the ticker and interval specified in `config.json`.
-2. Indicator Calculations: SMA, RSI, and other metrics are computed for the dataset.
-3. Simulations: Monte Carlo simulations iterate through possible parameter configurations to identify the best-performing strategies.
-4. Visualization: Indicators and trade signals are plotted on an interactive candlestick chart using Plotly.
+### Minimal Strategy Template
 
-### Configurable Settings
+Edit `core/order.py` (lines 94-138):
 
-Below is a comprehensive list of all configurable settings available in `config.json`:
+```python
+# Entry signal
+if can_buy and your_condition:
+    buy(entries, amount, price)
+    stoploss_takeprofit.update(price, atr, datetime)
 
-- **General**:
+# Exit signal (optional — ATR stops handle this by default)
+if your_exit_condition:
+    sell(exits, price)
+    stoploss_takeprofit.remove()
+```
 
-  - `ticker`: The stock ticker to load data for (e.g., `"AAPL"` for Apple).
-  - `simulate`: Boolean (`true`/`false`) to enable or disable simulations.
-  - `mostRecent`: Boolean (`true`/`false`) to specify whether the app uses the most recent data or a custom date range.
-  - `interval`: Time interval between each candle (e.g., `"1d"`, `"60m"`, `"5m"`).
-  - `timePeriod`: Specifies the time period for analysis when `mostRecent` is `true` (e.g., `"5d"`).
-  - `startDate`: Start date for data when `mostRecent` is `false` (format: `"YYYY-MM-DD"`).
-  - `endDate`: End date for data when `mostRecent` is `false` (format: `"YYYY-MM-DD"`).
-  - `addCsv`: Boolean (`true`/`false`) to determine whether the candlestick chart data should be exported to a CSV file.
-  - `dummyData`: Boolean (`true`/`false`) to determine whether dummy data in the form of a CSV file at the root should be used instead of API data.
-  - `dummyCsvFileName`: The file name of your dummy CSV file.
-  - `renderStoplossTakeprofit`: Boolean (`true`/`false`) to enable or disable rendering stoploss and takeprofit regions on the chart.
+### Available Data Per Candle
 
-  **NOTE:** _If you wish not to use stop loss/take profit and want to trigger your own sell signals, simply set_ `stoplossAtrMultiplier` _and_ `stoplossAtrMultiplier` _in_ `config.json` _to extremely high values, and set_ `renderStoplossTakeprofit` _to_ `false`_._
+```python
+candle["datetime"]  # Timestamp
+candle["open"]      # Open price
+candle["close"]     # Close price
+candle["high"]      # High price
+candle["low"]       # Low price
+candle["sma"]       # Simple moving average
+candle["rsi"]       # RSI (0-100)
+candle["atr"]       # Average true range
+candle["std_dev"]   # Standard deviation
+```
 
-- **Indicators**:
+### Configuration Reference
 
-  - `maPeriod`: Number of candles used to calculate the Simple Moving Average (SMA).
-  - `rsiPeriod`: Number of candles used to calculate the Relative Strength Index (RSI).
-  - `atrPeriod`: Number of candles used to calculate the Average True Range (ATR).
-  - `stdDevPeriod`: Number of candles used to calculate the Standard Deviation.
-
-- **Simulate**:
-
-  - `simulations`: Number of Monte Carlo simulations to run for parameter optimization.
-  - `simBestBacktests`: Boolean (`true`/`false`) to enable or disable using the best backtest results for further simulations.
-  - `topResultsPercentile`: Percentile of top-performing simulations to save (e.g., `90` for top 10%).
-  - `writeBacktestsToJSON`: Boolean (`true`/`false`) to enable or disable writing each backtest to a JSON file.
-  - `addToTopResults`: Boolean (`true`/`false`) to enable or disable writing the best backtests from each simulation to the `.BEST-BACKTESTS.json` file.
-  - `topResultsPercentile`: The percentile used to determine the amount of results considered as 'best'.
-
-- **Account**:
-
-  - `initialBalance`: Starting balance of the trading account.
-  - `baseOrderValue`: Minimum amount allocated for a single trade.
-  - `maxOrderValue`: Maximum allowable value for a single trade.
-  - `maxConcurrentPositions`: Maximum number of open positions allowed simultaneously.
-
-- **Multipliers**:
-  - `buyMultiplier`: Multiplier applied to entry capital for calculating trade size.
-  - `bandMultiplier`: Number of standard deviations used for mean reversion triggers.
-  - `stoplossAtrMultiplier`: How many multiples of current ATR value the stoploss is set below buy price.
-  - `takeprofitAtrMultiplier`: How many multiples of current ATR value the takeprofit is set above buy price.
-
-### Example `config.json`
+**Key Settings (`config.json`):**
 
 ```json
 {
   "general": {
-    "ticker": "AAPL",
-    "simulate": false,
-    "mostRecent": true,
-    "interval": "1d",
-    "timePeriod": "2y",
-    "startDate": "2021-12-28",
-    "endDate": "2024-12-28",
-    "addCsv": false,
-    "dummyData": true,
-    "dummyCsvFileName": "data.csv",
-    "renderStoplossTakeprofit": true
-  },
-  "indicators": {
-    "maPeriod": 50,
-    "rsiPeriod": 14,
-    "atrPeriod": 14,
-    "stdDevPeriod": 20
-  },
-  "simulate": {
-    "simulations": 100,
-    "simBestBacktests": false,
-    "writeBacktestsToJSON": true,
-    "addToTopResults": true,
-    "topResultsPercentile": 90
+    "ticker": "AAPL", // yfinance ticker
+    "interval": "1d", // 1m, 5m, 15m, 1h, 1d etc
+    "startDate": "2022-01-01",
+    "endDate": "2025-01-01",
+    "simulate": false // Enable Monte Carlo
   },
   "account": {
     "initialBalance": 10000,
-    "baseOrderValue": 1000,
-    "maxOrderValue": 8000,
+    "baseOrderValue": 1000, // Minimum trade size
+    "maxOrderValue": 8000, // Maximum trade size
     "maxConcurrentPositions": 5
   },
   "multipliers": {
-    "buyMultiplier": 3.0,
-    "bandMultiplier": 1.5,
-    "stoplossAtrMultiplier": 1.25,
-    "takeprofitAtrMultiplier": 3.05
+    "buyMultiplier": 1.5, // Position sizing scalar
+    "stoplossAtrMultiplier": 1.5,
+    "takeprofitAtrMultiplier": 3.0
+  },
+  "simulate": {
+    "simulations": 100,
+    "simBestBacktests": false, // Re-simulate top performers
+    "topResultsPercentile": 90 // Filter threshold
   }
 }
 ```
 
 ---
 
-## Creating your Algorithm
+## Performance Metrics
 
-In order to create a **buy** signal, you will need to use these 2 lines of code:
+Each backtest calculates:
 
-```python
-buy(entries, <amount>, <price>)
-stoploss_takeprofit.update(<price>, <atr>, <purchase_date>)
+- **Total Return** — `(final_value - initial_value) / initial_value × 100`
+- **Win Rate** — `profitable_trades / completed_trades × 100`
+- **Final Portfolio Value** — Absolute ending capital
+- **Trade Count** — Number of completed round trips
 
-# Example:
-
-buy(entries, config["account"]["baseOrderValue"], candles[i]["close"])
-stoploss_takeprofit.update(strategy_1_response["price"], candles[i]["atr"], candles[i]["datetime"])
-
-# Place a buy order at the closing price for the amount defined in config.json and update the stop loss/take profit.
-```
-
-In order to create a **sell** signal, you will need to use these 2 lines of code:
-
-```python
-sell(exits, <price>)
-stoploss_takeprofit.remove()
-
-# Example:
-
-sell(exits, candles[i]["close"])
-stoploss_takeprofit.remove()
-# Place a sell order at the closing price of the current candle and remove stop loss/take profit for the closed position.
-```
-
-To help your algorithm decide when to create an indicator, you have the following data available **for each rendered candle**:
-
-```python
-candle["datetime"]  # Datetime of the candle
-candle["open"]  # Open price of the candle
-candle["close"]  # Close price of the candle
-candle["high"]  # High price of the candle
-candle["low"]  # Low price of the candle
-candle["sma"]  # Moving average at the candle
-candle["rsi"]  # Relative strength index at the candle
-candle["atr"]  # Average true range at the candle
-candle["std_dev"]  # Standard deviation at the candle
-```
-
-You will be able to access these candles by iterating through each entry in the 'candles' list in `order.py`.
+Results are printed to console and saved to JSON with full parameter configurations for reproducibility.
 
 ---
 
-## Visualisation
+## Technical Notes
 
-The platform dynamically updates visualizations, including:
-
-- **Candlestick Charts**: Price movements.
-- **Buy/Sell Markers**: Entry and exit points.
-- **Indicator Lines**: SMA, RSI, and more.
-
-You will simply need to save your Python files after changing them.
-
----
-
-## Monte Carlo Simulations
-
-To optimise strategies:
-
-1. Set `simulate` to `true` in `config.json`.
-2. Specify the number of simulations (`simulations`).
-3. Initial results are saved for analysis, with top-performing strategies having the option to be re-simulated by setting `simBestBacktests` to `true`. The results from these simulations will overrwite the `z.results/.BEST-BACKTESTS.json` file with the new best backtest results.
+- **Asset Class:** US equities and ETFs (Yahoo Finance coverage)
+- **Execution Model:** Assumes market orders filled at candle open/close
+- **Slippage/Commissions:** Not modeled (can be added in `Account.buy_order()`)
+- **Data Quality:** Relies on yfinance data integrity; includes repair functionality for stock splits
 
 ---
 
 ## Roadmap
 
-Future updates include:
-
-- **Leverage**: Add leverage to a buy order.
-- **Comprehensive** dashboard UI: Check your trades in a dashboard.
-- **Simulations**: Measure how your algorithm performs when run through rigourous simulations.
-- **Create an account**: Keep track of all your past and present trades to see how your model performs over time.
-
----
-
-## Final notes:
-
-- Asset class focus: US equities and ETFs
-- Data source: yfinance
+- Live trading integration (Alpaca API)
+- Walk-forward analysis
+- Multi-asset portfolio backtesting
+- Sharpe ratio, max drawdown, and additional risk metrics
+- Web dashboard for strategy comparison
 
 ---
 
-## Contribute
+## Contributing
 
-We welcome contributions! Submit pull requests or issues on [GitHub](https://github.com/JamieWells1/trading-algorithm-boilerplate/issues)
+Pull requests welcome. For major changes, open an issue first to discuss proposed modifications.
+
+**Contact:** [GitHub Issues](https://github.com/JamieWells1/trading-algorithm-boilerplate/issues)
+
+MIT License

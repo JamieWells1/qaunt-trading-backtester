@@ -100,7 +100,7 @@ def build():
         col=1,
     )
 
-    if config["general"]["renderStoplossTakeprofit"] == True:
+    if config["general"]["renderStoplossTakeprofit"]:
         for region in data.takeprofit_regions:
             fig.add_shape(
                 type="rect",
@@ -157,17 +157,14 @@ def simulate():
 
     config = fetch.get_settings()
 
-    if config["simulate"]["simBestBacktests"] == False:
+    if not config["simulate"]["simBestBacktests"]:
         iterations = config["simulate"]["simulations"]
     else:
         all_best_backtests = utils.variables.load_best_backtests()
-        if len(all_best_backtests) > 0:
-            iterations = len(all_best_backtests)
-        else:
-            print(
-                "Cannot perform simulation on best backtests when there are none. Please restart the server."
-            )
+        if not all_best_backtests:
+            print("Cannot perform simulation on best backtests when there are none. Set 'simBestBacktests' to false in config.json.")
             quit()
+        iterations = len(all_best_backtests)
     for i in range(iterations):
 
         account = Account(
